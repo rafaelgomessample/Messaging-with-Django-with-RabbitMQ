@@ -1,0 +1,52 @@
+from django.core.management.base import BaseCommand
+
+from core.messaging.consumer import EventConsumer
+from core.messaging.exchanges import ExchangeEnum
+from orders.handlers.orders_handlers import (
+    order_created_handler,
+    order_notification_handler,
+)
+
+
+DATA_EVENT_HANDLER_MAPPING_BY_EVENT = {
+    "order_created": dict(
+        exchange=ExchangeEnum.ORDERS,
+        queue_name="orders.order_created",
+        routing_key="orders.order_created",
+        handler=order_created_handler,
+    ),
+    "order_notification": dict(
+        exchange=ExchangeEnum.ORDERS,
+        queue_name="orders.order_notification",
+        routing_key="orders.order_notification",
+        handler=order_notification_handler,
+    )
+}
+
+
+class Command(BaseCommand):
+    # This description shows up when running: python manage.py start_subscribers --help
+    help = "Starts the consumer processes"
+
+    def add_arguments(self, parser):
+        parser.add_argument("event", type=str)
+
+    def handle(self, *args, **options):
+        event = options["event"]
+        data_event = DATA_EVENT_HANDLER_MAPPING_BY_EVENT[event]
+        exchange = data_event["exchange"]
+        queue_name = data_event["queue_name"]
+        routing_key = data_event["routing_key"]
+
+        print(f"==================================")
+        print(f"Start consumer event from {event}")
+        print(f"Exchange: {exchange}")
+        print(f"Queue: {queue_name}")
+        print(f"Routing key: {routing_key}")
+        print(f"==================================")
+
+        EventConsumer(
+            exchange=exchange,
+            queue_name=queue_name,
+            routing_key=routing_key,
+        ).consume(data_event["handler"])
