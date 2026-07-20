@@ -19,12 +19,3 @@ def order_created_handler(payload: dict):
         routing_key="orders.order_notification",
         payload={"order_id": payload["order_id"], "type_notification": "email"},
     )
-
-    sleep(10)
-    event_publisher_payment_change_status = EventPublisher(
-        exchange=ExchangeEnum.PAYMENTS
-    )
-    event_publisher_payment_change_status.publish(
-        routing_key="payments.payment_change_status",
-        payload={"order_id": payload["order_id"], "status_next": "paid"},
-    )
